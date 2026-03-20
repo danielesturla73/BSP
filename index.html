@@ -408,13 +408,17 @@ function scrollToMioNome(){
     if(!firstCell)return;
     const wrap=tbody.closest('.table-wrap');
     if(!wrap)return;
-    const stickyW=200; // larghezza colonne fisse Dal+Al
     const wrapRect=wrap.getBoundingClientRect();
     const cellRect=firstCell.getBoundingClientRect();
+    // Misura larghezza reale delle due colonne fisse (Dal + Al)
+    const tbl=tbody.closest('table');
+    const th1=tbl.querySelector('th:nth-child(1)');
+    const th2=tbl.querySelector('th:nth-child(2)');
+    const stickyW=(th1?th1.offsetWidth:100)+(th2?th2.offsetWidth:100);
     // Posizione assoluta della cella nel contenitore scrollabile
     const cellLeft=wrap.scrollLeft+(cellRect.left-wrapRect.left);
-    // Scrolla in modo che il bordo sinistro della cella sia a ridosso delle colonne fisse
-    const target=cellLeft-stickyW-8;
+    // Scrolla in modo che il bordo sinistro della cella sia esattamente a ridosso delle colonne fisse
+    const target=cellLeft-stickyW;
     wrap.scrollTo({left:Math.max(0,target),behavior:'smooth'});
   });
 }
