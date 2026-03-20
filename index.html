@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reperibilità Acquedotto 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blu:#0d3b66; --blu-light:#e8f0f9; --blu-mid:#2563a8;
+    --arancio:#b45309; --arancio-light:#fef3c7;
+    --highlight:#fef08a; --highlight-border:#f59e0b;
+    --oggi-bg:#dbeafe; --oggi-border:#2563a8;
+    --gray:#6b7280; --border:#e5e7eb; --text:#111827; --text-muted:#6b7280;
+    --bg:#f3f4f6; --card:#ffffff; --radius:10px;
+  }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:1.5rem 1rem 3rem; }
+  .app { max-width:960px; margin:0 auto; }
+
+  .page-header { text-align:center; margin-bottom:1.75rem; }
+  .page-header h1 { font-size:1.6rem; font-weight:700; color:var(--blu); letter-spacing:-0.3px; }
+  .page-header p { color:var(--text-muted); font-size:0.88rem; margin-top:0.3rem; }
+
+  .selector-card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:1.25rem 1.5rem; margin-bottom:1rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  .selector-card label { font-size:0.85rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
+  .selector-card select { flex:1; min-width:200px; padding:0.55rem 0.9rem; border:1.5px solid var(--border); border-radius:8px; font-size:0.95rem; color:var(--text); background:#fff; outline:none; cursor:pointer; }
+  .selector-card select:focus { border-color:var(--blu-mid); }
+
+  .badges { display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; }
+  .badge { padding:0.25rem 0.75rem; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge-blu { background:var(--blu-light); color:var(--blu); }
+  .badge-arancio { background:var(--arancio-light); color:var(--arancio); }
+
+  .toolbar { display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+  .btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.55rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; border:1.5px solid; transition:opacity 0.15s; }
+  .btn:disabled { opacity:0.35; cursor:not-allowed; }
+  .btn-preview { background:#166534; color:#fff; border-color:#166534; }
+  .btn-preview:hover:not(:disabled) { background:#14532d; }
+  .btn-mine { background:#b45309; color:#fff; border-color:#b45309; }
+  .btn-mine:hover:not(:disabled) { background:#92400e; }
+
+  /* TABELLE PRINCIPALI */
+  .section { margin-bottom:2rem; }
+  .section-header { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; padding:0.75rem 1rem; border-radius:var(--radius); color:#fff; }
+  .section-header.idro { background:var(--blu); }
+  .section-header.elett { background:#78350f; }
+  .section-header h2 { font-size:1rem; font-weight:700; flex:1; }
+  .section-header .subtitle { font-size:0.78rem; opacity:0.8; white-space:nowrap; }
+
+  .table-wrap { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:0.84rem; min-width:560px; }
+  thead tr { background:#f9fafb; }
+  thead th { padding:0.6rem 0.8rem; text-align:left; font-weight:600; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); border-bottom:2px solid var(--border); white-space:nowrap; }
+  thead th:nth-child(1),tbody td:nth-child(1) { position:sticky; left:0; width:88px; min-width:88px; max-width:88px; z-index:2; }
+  thead th:nth-child(2),tbody td:nth-child(2) { position:sticky; left:88px; width:88px; min-width:88px; max-width:88px; z-index:2; box-shadow:3px 0 6px rgba(0,0,0,0.10); }
+  thead th:nth-child(1) { background:#f9fafb; z-index:3; }
+  thead th:nth-child(2) { background:#f9fafb; z-index:3; }
+  tbody td:nth-child(1) { background:var(--card); }
+  tbody td:nth-child(2) { background:var(--card); }
+  tr.oggi-row td:nth-child(1),tr.oggi-row td:nth-child(2) { background:var(--oggi-bg); }
+  .table-wrap table { border-collapse:separate; border-spacing:0; }
+  tbody tr { border-bottom:1px solid #f0f0f0; transition:background 0.1s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:#f9fafb; }
+  tbody td { padding:0.55rem 0.8rem; color:var(--text); white-space:nowrap; }
+
+  td.date-col { color:var(--text-muted); font-size:0.8rem; }
+  td.date-col span { display:block; }
+  td.date-col .dow { font-weight:600; color:var(--text); font-size:0.82rem; }
+  td.nome-cell { font-weight:500; }
+  td.mio-nome { background:var(--highlight); color:#78350f !important; font-weight:700; border-radius:5px; outline:2px solid var(--highlight-border); outline-offset:-2px; }
+  tr.oggi-row { background:var(--oggi-bg) !important; border-left:3px solid var(--oggi-border); }
+  tr.oggi-row td.mio-nome { background:#fde047; outline-color:#ca8a04; color:#713f12 !important; }
+  .oggi-badge { display:inline-block; background:var(--oggi-border); color:#fff; font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; text-transform:uppercase; }
+
+  .legenda { display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.6rem; font-size:0.78rem; color:var(--text-muted); padding:0 0.25rem; }
+  .legenda-item { display:flex; align-items:center; gap:0.4rem; }
+  .legenda-swatch { width:22px; height:12px; border-radius:3px; flex-shrink:0; }
+  .sw-oggi { background:var(--oggi-bg); border-left:3px solid var(--oggi-border); }
+  .sw-highlight { background:var(--highlight); border:2px solid var(--highlight-border); }
+  .sw-entrambi { background:#fde047; border:2px solid #ca8a04; }
+
+  /* MODAL ANTEPRIMA */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; -webkit-overflow-scrolling:touch; overflow-y:scroll; }
+  .modal-overlay.open { display:block; }
+  .modal-box { background:#fff; border-radius:12px; max-width:860px; width:calc(100% - 2rem); margin:1rem auto 3rem; padding:1.5rem; }
+  .modal-toolbar { display:flex; gap:0.6rem; justify-content:flex-end; margin-bottom:1.25rem; flex-wrap:wrap; position:sticky; top:0; background:#fff; padding:0.5rem 0; z-index:10; border-bottom:1px solid var(--border); }
+  .btn-close { background:#fff; color:#374151; border-color:#d1d5db; }
+  .btn-close:hover { background:#f3f4f6; }
+  @media (max-width:600px) {
+    .modal-box { width:calc(100% - 1rem); margin:0.5rem auto 2rem; padding:0.9rem; }
+    .preview-content table { font-size:0.75rem; }
+    .preview-content th,.preview-content td { padding:4px 5px; }
+  }
+
+  /* CONTENUTO ANTEPRIMA / STAMPA — stesso stile */
+  .preview-content h1 { font-size:1.3rem; font-weight:700; color:#0d3b66; margin-bottom:0.25rem; }
+  .preview-content .sub { color:#6b7280; font-size:0.82rem; margin-bottom:1.5rem; }
+  .preview-content h2 { font-size:0.95rem; font-weight:700; padding:6px 12px; color:#fff; border-radius:6px; margin:1.25rem 0 0.6rem; }
+  .preview-content .ph-idro { background:#0d3b66; }
+  .preview-content .ph-elett { background:#78350f; }
+  .preview-content table { border-collapse:collapse; width:100%; font-size:0.82rem; }
+  .preview-content th { background:#f3f4f6; font-weight:600; padding:6px 8px; border-bottom:2px solid #d1d5db; text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.3px; color:#6b7280; }
+  .preview-content td { padding:5px 8px; border-bottom:1px solid #e5e7eb; color:#111827; }
+  .preview-content tr.ph-oggi { background:#dbeafe; }
+  .preview-content td.ph-mine { background:#fef08a; font-weight:700; color:#78350f; border-radius:4px; outline:2px solid #f59e0b; outline-offset:-2px; }
+
+  /* STAMPA */
+  #printOverlay { display:none; }
+
+  @media print {
+    body > * { display:none !important; }
+    #printOverlay { display:block !important; font-family:'Segoe UI',sans-serif; color:#111; font-size:10pt; padding:0; }
+    #printOverlay h1 { font-size:14pt; color:#0d3b66; margin-bottom:3px; }
+    #printOverlay .sub { color:#666; font-size:9pt; margin-bottom:18px; }
+    #printOverlay h2 { font-size:10pt; padding:5px 10px; color:#fff; border-radius:5px; margin:16px 0 7px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    #printOverlay .ph-idro  { background:#0d3b66 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    #printOverlay .ph-elett { background:#78350f !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    #printOverlay table { border-collapse:collapse; width:100%; font-size:9pt; }
+    #printOverlay th { background:#f3f4f6 !important; font-weight:600; padding:4px 7px; border-bottom:2px solid #d1d5db; text-align:left; font-size:7.5pt; text-transform:uppercase; -webkit-print-color-adjust:exact; print-color-adjust:exact; color:#6b7280; }
+    #printOverlay td { padding:4px 7px; border-bottom:1px solid #e5e7eb; color:#111; }
+    #printOverlay tr.ph-oggi { background:#dbeafe !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    #printOverlay td.ph-mine { background:#fef08a !important; font-weight:700; color:#78350f; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  }
+
+  @media (max-width:600px) {
+    .page-header h1 { font-size:1.3rem; }
+    .selector-card { flex-direction:column; align-items:stretch; }
+    .selector-card select { min-width:unset; }
+    .toolbar { flex-direction:column; }
+    .btn { justify-content:center; }
+    .section-header .subtitle { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="page-header">
+    <h1>📋 Reperibilità Acquedotto 2026</h1>
+    <p>Seleziona il tuo nome per trovare i tuoi turni evidenziati</p>
+  </div>
+
+  <div class="selector-card">
+    <label>Il tuo nome:</label>
+    <select id="nomeSelect" onchange="aggiorna()">
+      <option value="">— Seleziona il tuo nome —</option>
+    </select>
+    <div class="badges" id="badgeZone"></div>
+  </div>
+
+  <div class="toolbar no-print">
+    <button class="btn btn-preview" id="btnPreview" onclick="apriAnteprima()" disabled>👁️ Anteprima i miei turni</button>
+    <button class="btn btn-mine"    id="btnMine"    onclick="stampaMieiTurni()" disabled>📄 PDF i miei turni</button>
+  </div>
+
+  <div class="section">
+    <div class="section-header idro">
+      <span>🔵</span>
+      <h2>Reperibilità Idraulici</h2>
+      <span class="subtitle">Giovedì ore 8:00 → Giovedì ore 8:00</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dal</th><th>Al</th><th>Caposervizio</th><th>Escavatorista</th><th>Op. Squadra 1</th><th>Op. Squadra 2</th><th>Op. Squadra 3</th></tr></thead>
+        <tbody id="bodyIdro"></tbody>
+      </table>
+    </div>
+    <div class="legenda">
+      <div class="legenda-item"><div class="legenda-swatch sw-oggi"></div> Settimana in corso</div>
+      <div class="legenda-item"><div class="legenda-swatch sw-highlight"></div> Il tuo nome</div>
+      <div class="legenda-item"><div class="legenda-swatch sw-entrambi"></div> Il tuo nome — settimana in corso</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header elett">
+      <span>🟠</span>
+      <h2>Reperibilità Elettrici + Telecontrollo</h2>
+      <span class="subtitle">Venerdì ore 8:00 → Venerdì ore 8:00</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dal</th><th>Al</th><th>Elettricista</th><th>Telecontrollo</th></tr></thead>
+        <tbody id="bodyElett"></tbody>
+      </table>
+    </div>
+    <div class="legenda">
+      <div class="legenda-item"><div class="legenda-swatch sw-oggi"></div> Settimana in corso</div>
+      <div class="legenda-item"><div class="legenda-swatch sw-highlight"></div> Il tuo nome</div>
+      <div class="legenda-item"><div class="legenda-swatch sw-entrambi"></div> Il tuo nome — settimana in corso</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL ANTEPRIMA -->
+<div class="modal-overlay" id="modalOverlay" onclick="chiudiSeEsterno(event)">
+  <div class="modal-box">
+    <div class="modal-toolbar no-print">
+      <button class="btn btn-mine" onclick="stampaMieiTurni()">📄 Stampa / PDF</button>
+      <button class="btn btn-close" onclick="chiudiAnteprima()">✕ Chiudi</button>
+    </div>
+    <div class="preview-content" id="previewContent"></div>
+  </div>
+</div>
+
+<div id="printOverlay"></div>
+
+<script>
+const GG=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+const MM=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+
+const IDRO=[
+  [[2026,3,2],[2026,3,9],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2026,3,9],[2026,3,16],'STURLA J.','ESTERNA','QUINTIERO','ALBERIZZI','BRIGNOLI'],
+  [[2026,3,16],[2026,3,23],'DELBUONO','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2026,3,23],[2026,3,30],'DRUSINI','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2026,3,30],[2026,4,7],'COVINI M.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2026,4,7],[2026,4,14],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2026,4,14],[2026,4,21],'MOLINELLI','ESTERNA','QUINTIERO','MONACO','BRIGNOLI'],
+  [[2026,4,21],[2026,4,28],'STURLA J.','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2026,4,28],[2026,5,4],'DRUSINI','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2026,5,4],[2026,5,11],'COVINI M.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2026,5,11],[2026,5,18],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2026,5,18],[2026,5,25],'MOLINELLI','ESTERNA','QUINTIERO','LOMBARDI','BRIGNOLI'],
+  [[2026,5,25],[2026,6,2],'DELBUONO','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2026,6,2],[2026,6,9],'STURLA J.','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2026,6,9],[2026,6,16],'COVINI M.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2026,6,16],[2026,6,23],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2026,6,23],[2026,6,30],'MOLINELLI','ESTERNA','QUINTIERO','MOMBELLI','BRIGNOLI'],
+  [[2026,6,30],[2026,7,6],'DELBUONO','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2026,7,6],[2026,7,13],'DRUSINI','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2026,7,13],[2026,7,20],'STURLA J.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2026,7,20],[2026,7,27],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2026,7,27],[2026,8,3],'MOLINELLI','ESTERNA','QUINTIERO','PEZZINI','BRIGNOLI'],
+  [[2026,8,3],[2026,8,10],'DELBUONO','POLITI','PROSAPIO','NOBILE',null],
+  [[2026,8,10],[2026,8,17],'DRUSINI','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2026,8,17],[2026,8,24],'COVINI M.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2026,8,24],[2026,9,1],'STURLA J.','RINALDI','LERTORA','FARAVELLI',null],
+  [[2026,9,1],[2026,9,8],'MOLINELLI','ESTERNA','QUINTIERO','NOBILE','BRIGNOLI'],
+  [[2026,9,8],[2026,9,15],'DELBUONO','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2026,9,15],[2026,9,22],'DRUSINI','LOMBARDI','MOMBELLI','MONACO',null],
+  [[2026,9,22],[2026,9,29],'COVINI M.','DELMONTE','LERTORA','ALBERIZZI',null],
+  [[2026,9,29],[2026,10,5],'COVINI F.','RINALDI','PEZZINI','NOBILE',null],
+  [[2026,10,5],[2026,10,12],'STURLA J.','ESTERNA','QUINTIERO','LERTORA','BRIGNOLI'],
+  [[2026,10,12],[2026,10,19],'DELBUONO','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2026,10,19],[2026,10,26],'DRUSINI','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2026,10,26],[2026,11,3],'COVINI M.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2026,11,3],[2026,11,10],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2026,11,10],[2026,11,17],'MOLINELLI','ESTERNA','QUINTIERO','ALBEIZZI','BRIGNOLI'],
+  [[2026,11,17],[2026,11,24],'STURLA J.','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2026,11,24],[2026,11,31],'DRUSINI','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2026,11,31],[2027,0,7],'COVINI M.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2027,0,7],[2027,0,14],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2027,0,14],[2027,0,21],'MOLINELLI','ESTERNA','QUINTIERO','MONACO','BRIGNOLI'],
+  [[2027,0,21],[2027,0,28],'DELBUONO','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2027,0,28],[2027,1,4],'STURLA J.','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2027,1,4],[2027,1,11],'COVINI M.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2027,1,11],[2027,1,18],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2027,1,18],[2027,1,25],'MOLINELLI','ESTERNA','QUINTIERO','LOMBARDI','BRIGNOLI'],
+  [[2027,1,25],[2027,2,4],'DELBUONO','POLITI','PROSAPIO','FARAVELLI',null],
+  [[2027,2,4],[2027,2,11],'DRUSINI','MOMBELLI','LOMBARDI','MONACO',null],
+  [[2027,2,11],[2027,2,18],'STURLA J.','DELMONTE','PEZZINI','ALBERIZZI',null],
+  [[2027,2,18],[2027,2,25],'COVINI F.','RINALDI','LERTORA','NOBILE',null],
+  [[2027,2,25],[2027,3,1],'MOLINELLI','ESTERNA','QUINTIERO','MOMBELLI','BRIGNOLI'],
+];
+
+const ELETT=[
+  [[2026,3,3],[2026,3,10],'DIGIROLAMO','CAPPADONA'],
+  [[2026,3,10],[2026,3,17],'VALACCHI','VALACCHI'],
+  [[2026,3,17],[2026,3,24],'CAPPADONA','CAPPADONA'],
+  [[2026,3,24],[2026,4,1],'ESPOSTI','VALACCHI'],
+  [[2026,4,1],[2026,4,8],'DIGIROLAMO','CAPPADONA'],
+  [[2026,4,8],[2026,4,15],'VALACCHI','VALACCHI'],
+  [[2026,4,15],[2026,4,22],'CAPPADONA','CAPPADONA'],
+  [[2026,4,22],[2026,4,29],'ESPOSTI','VALACCHI'],
+  [[2026,4,29],[2026,5,5],'DIGIROLAMO','CAPPADONA'],
+  [[2026,5,5],[2026,5,12],'VALACCHI','VALACCHI'],
+  [[2026,5,12],[2026,5,19],'CAPPADONA','CAPPADONA'],
+  [[2026,5,19],[2026,5,26],'ESPOSTI','VALACCHI'],
+  [[2026,5,26],[2026,6,3],'DIGIROLAMO','CAPPADONA'],
+  [[2026,6,3],[2026,6,10],'VALACCHI','VALACCHI'],
+  [[2026,6,10],[2026,6,17],'CAPPADONA','CAPPADONA'],
+  [[2026,6,17],[2026,6,24],'ESPOSTI','VALACCHI'],
+  [[2026,6,24],[2026,6,31],'DIGIROLAMO','CAPPADONA'],
+  [[2026,6,31],[2026,7,7],'VALACCHI','VALACCHI'],
+  [[2026,7,7],[2026,7,14],'CAPPADONA','CAPPADONA'],
+  [[2026,7,14],[2026,7,21],'ESPOSTI','VALACCHI'],
+  [[2026,7,21],[2026,7,28],'DIGIROLAMO','CAPPADONA'],
+  [[2026,7,28],[2026,8,4],'VALACCHI','VALACCHI'],
+  [[2026,8,4],[2026,8,11],'CAPPADONA','CAPPADONA'],
+  [[2026,8,11],[2026,8,18],'ESPOSTI','VALACCHI'],
+  [[2026,8,18],[2026,8,25],'DIGIROLAMO','CAPPADONA'],
+  [[2026,8,25],[2026,9,2],'VALACCHI','VALACCHI'],
+  [[2026,9,2],[2026,9,9],'CAPPADONA','CAPPADONA'],
+  [[2026,9,9],[2026,9,16],'ESPOSTI','VALACCHI'],
+  [[2026,9,16],[2026,9,23],'DIGIROLAMO','CAPPADONA'],
+  [[2026,9,23],[2026,9,30],'VALACCHI','VALACCHI'],
+  [[2026,9,30],[2026,10,6],'CAPPADONA','CAPPADONA'],
+  [[2026,10,6],[2026,10,13],'ESPOSTI','VALACCHI'],
+  [[2026,10,13],[2026,10,20],'DIGIROLAMO','CAPPADONA'],
+  [[2026,10,20],[2026,10,27],'VALACCHI','VALACCHI'],
+  [[2026,10,27],[2026,11,4],'CAPPADONA','CAPPADONA'],
+  [[2026,11,4],[2026,11,11],'ESPOSTI','VALACCHI'],
+  [[2026,11,11],[2026,11,18],'DIGIROLAMO','CAPPADONA'],
+  [[2026,11,18],[2026,11,25],'VALACCHI','VALACCHI'],
+  [[2026,11,25],[2027,0,1],'CAPPADONA','CAPPADONA'],
+  [[2027,0,1],[2027,0,8],'ESPOSTI','VALACCHI'],
+  [[2027,0,8],[2027,0,15],'DIGIROLAMO','CAPPADONA'],
+  [[2027,0,15],[2027,0,22],'VALACCHI','VALACCHI'],
+  [[2027,0,22],[2027,0,29],'CAPPADONA','CAPPADONA'],
+  [[2027,0,29],[2027,1,5],'ESPOSTI','VALACCHI'],
+  [[2027,1,5],[2027,1,12],'DIGIROLAMO','CAPPADONA'],
+  [[2027,1,12],[2027,1,19],'VALACCHI','VALACCHI'],
+  [[2027,1,19],[2027,1,26],'CAPPADONA','CAPPADONA'],
+  [[2027,1,26],[2027,2,5],'ESPOSTI','VALACCHI'],
+  [[2027,2,5],[2027,2,12],'DIGIROLAMO','CAPPADONA'],
+  [[2027,2,12],[2027,2,19],'VALACCHI','VALACCHI'],
+  [[2027,2,19],[2027,2,26],'CAPPADONA','CAPPADONA'],
+  [[2027,2,26],[2027,3,2],'ESPOSTI','VALACCHI'],
+];
+
+function toDate(a){return new Date(a[0],a[1],a[2]);}
+function fmtData(a){const d=toDate(a);return`<span class="dow">${GG[d.getDay()]} ${d.getDate()} ${MM[d.getMonth()]}</span><span>${d.getFullYear()}</span>`;}
+function fmtTesto(a){const d=toDate(a);return`${GG[d.getDay()]} ${d.getDate()} ${MM[d.getMonth()]} ${d.getFullYear()}`;}
+function isOggi(i,f){const o=new Date();o.setHours(0,0,0,0);return toDate(i)<=o&&o<toDate(f);}
+function contiene(r,n){return r.slice(2).some(v=>v&&v.toUpperCase()===n.toUpperCase());}
+
+function tuttiNomi(){
+  const s=new Set();
+  // ESTERNA è un nome come gli altri
+  IDRO.forEach(r=>r.slice(2).forEach(v=>{if(v)s.add(v);}));
+  ELETT.forEach(r=>r.slice(2).forEach(v=>{if(v)s.add(v);}));
+  return[...s].sort();
+}
+
+function renderIdro(nome){
+  let h='',c=0;
+  IDRO.forEach(r=>{
+    const og=isOggi(r[0],r[1]),mio=nome?contiene(r,nome):false;
+    if(mio)c++;
+    const tag=og?'<span class="oggi-badge">questa settimana</span>':'';
+    const celle=r.slice(2).map(v=>{
+      if(v===null)return'<td></td>';
+      const ev=nome&&v.toUpperCase()===nome.toUpperCase();
+      return`<td class="nome-cell${ev?' mio-nome':''}">${v}</td>`;
+    });
+    h+=`<tr class="${og?'oggi-row':''}"><td class="date-col">${fmtData(r[0])}${tag}</td><td class="date-col">${fmtData(r[1])}</td>${celle.join('')}</tr>`;
+  });
+  document.getElementById('bodyIdro').innerHTML=h;
+  return c;
+}
+
+function renderElett(nome){
+  let h='',c=0;
+  ELETT.forEach(r=>{
+    const og=isOggi(r[0],r[1]),mio=nome?contiene(r,nome):false;
+    if(mio)c++;
+    const tag=og?'<span class="oggi-badge">questa settimana</span>':'';
+    const celle=r.slice(2).map(v=>{
+      const ev=nome&&v.toUpperCase()===nome.toUpperCase();
+      return`<td class="nome-cell${ev?' mio-nome':''}">${v}</td>`;
+    });
+    h+=`<tr class="${og?'oggi-row':''}"><td class="date-col">${fmtData(r[0])}${tag}</td><td class="date-col">${fmtData(r[1])}</td>${celle.join('')}</tr>`;
+  });
+  document.getElementById('bodyElett').innerHTML=h;
+  return c;
+}
+
+function aggiorna(){
+  const nome=document.getElementById('nomeSelect').value;
+  const ni=renderIdro(nome),ne=renderElett(nome);
+  const hasTurni=ni>0||ne>0;
+  document.getElementById('btnMine').disabled=!nome||!hasTurni;
+  document.getElementById('btnPreview').disabled=!nome||!hasTurni;
+  const z=document.getElementById('badgeZone');
+  if(!nome){z.innerHTML='';return;}
+  let b='';
+  if(ni>0)b+=`<span class="badge badge-blu">🔵 ${ni} ${ni>1?'turni idraulici':'turno idraulico'}</span>`;
+  if(ne>0)b+=`<span class="badge badge-arancio">🟠 ${ne} ${ne>1?'turni elettrici':'turno elettrico'}</span>`;
+  if(!ni&&!ne)b+=`<span class="badge" style="background:#fee2e2;color:#991b1b;">Nessun turno trovato</span>`;
+  z.innerHTML=b;
+  setTimeout(scrollToMioNome, 80);
+}
+
+function scrollToMioNome(){
+  ['bodyIdro','bodyElett'].forEach(id=>{
+    const tbody=document.getElementById(id);
+    if(!tbody)return;
+    const cell=tbody.querySelector('td.mio-nome');
+    if(!cell)return;
+    const wrap=tbody.closest('.table-wrap');
+    if(!wrap)return;
+    // Posizione della cella rispetto al contenitore scrollabile
+    const wrapLeft=wrap.getBoundingClientRect().left;
+    const cellLeft=cell.getBoundingClientRect().left;
+    const cellCenter=wrap.scrollLeft+(cellLeft-wrapLeft)+(cell.offsetWidth/2);
+    // Centra la cella tenendo conto delle colonne sticky (larghezza ~180px)
+    const stickyWidth=window._stickyW||180;
+    const target=cellCenter-(wrap.offsetWidth/2)-(stickyWidth/2);
+    wrap.scrollTo({left:Math.max(0,target),behavior:'smooth'});
+  });
+}
+
+
+// Costruisce l'HTML dei turni personali (usato sia per anteprima che per stampa)
+function buildMieiTurni(nome){
+  const rI=IDRO.filter(r=>contiene(r,nome));
+  const rE=ELETT.filter(r=>contiene(r,nome));
+
+  function cI(v){
+    if(v===null)return'<td></td>';
+    return`<td class="${v.toUpperCase()===nome.toUpperCase()?'ph-mine':''}">${v}</td>`;
+  }
+  function cE(v){return`<td class="${v.toUpperCase()===nome.toUpperCase()?'ph-mine':''}">${v}</td>`;}
+
+  let h=`<h1>Reperibilità — ${nome}</h1>
+<div class="sub">Calendario 2026 · Broni-Stradella Pubblica S.r.l. · Stampato il ${new Date().toLocaleDateString('it-IT')}</div>`;
+
+  if(rI.length>0){
+    h+=`<h2 class="ph-idro">Idraulici · Giovedì ore 8:00 → Giovedì ore 8:00</h2>
+<table><thead><tr><th>Dal</th><th>Al</th><th>Caposervizio</th><th>Escavatorista</th><th>Op. Sq. 1</th><th>Op. Sq. 2</th><th>Op. Sq. 3</th></tr></thead><tbody>`;
+    rI.forEach(r=>{h+=`<tr class="${isOggi(r[0],r[1])?'ph-oggi':''}"><td>${fmtTesto(r[0])}</td><td>${fmtTesto(r[1])}</td>${r.slice(2).map(cI).join('')}</tr>`;});
+    h+=`</tbody></table>`;
+  }
+
+  if(rE.length>0){
+    h+=`<h2 class="ph-elett">Elettrici + Telecontrollo · Venerdì ore 8:00 → Venerdì ore 8:00</h2>
+<table><thead><tr><th>Dal</th><th>Al</th><th>Elettricista</th><th>Telecontrollo</th></tr></thead><tbody>`;
+    rE.forEach(r=>{h+=`<tr class="${isOggi(r[0],r[1])?'ph-oggi':''}"><td>${fmtTesto(r[0])}</td><td>${fmtTesto(r[1])}</td>${r.slice(2).map(cE).join('')}</tr>`;});
+    h+=`</tbody></table>`;
+  }
+
+  return h;
+}
+
+function apriAnteprima(){
+  const nome=document.getElementById('nomeSelect').value;
+  if(!nome)return;
+  document.getElementById('previewContent').innerHTML=buildMieiTurni(nome);
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function chiudiAnteprima(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function chiudiSeEsterno(e){
+  if(e.target===document.getElementById('modalOverlay'))chiudiAnteprima();
+}
+
+function stampaMieiTurni(){
+  const nome=document.getElementById('nomeSelect').value;
+  if(!nome)return;
+  document.getElementById('printOverlay').innerHTML=buildMieiTurni(nome);
+  document.body.classList.remove('print-tutto');
+  window.print();
+}
+
+// INIT
+(function(){
+  const sel=document.getElementById('nomeSelect');
+  tuttiNomi().forEach(n=>{
+    const o=document.createElement('option');
+    o.value=n; o.textContent=n;
+    sel.appendChild(o);
+  });
+  renderIdro('');
+  renderElett('');
+  window._stickyW=176;
+})();
+</script>
+</body>
+</html>
